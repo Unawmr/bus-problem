@@ -4,9 +4,10 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
+#include <sys/wait.h>
 #include <errno.h>
 int sem_id;
-void semaphore_v();
+
 void init()
 {	
 	key_t key;
@@ -22,32 +23,75 @@ void init()
 
 	sem_id=semget(key,2,IPC_CREAT|0644);
 
-	sem_array[0]=0;				// product
-	sem_array[1]=0;			// space
+	sem_array[0]=1;				// product
+	sem_array[1]=1;			// space
 	arg.array = sem_array;
 	ret = semctl(sem_id, 0, SETALL, arg);	
 	if (ret == -1) 
 		printf("SETALL failed (%d)\n", errno); 
-	printf("%d\n",ret);
-	printf("product init is %d\n",semctl(sem_id,0,GETVAL));
-	printf("space init is %d\n\n",semctl(sem_id,1,GETVAL));
+	printf("车已停好,等待售票员开门\n");
 }
+static int semaphore_p(void);
+void semaphore_v();
 int main()
 {
-	init();
-	/*while(1){
-if(){
-
-		printf("开门");
-		sleep(1);
-		printf("关门");
-		}*/
-
 	
-}
-void del()
-{
-	semctl(sem_id,IPC_RMID,0);
+	init();
+	pid_t pid1,pid2;
+	//if(!semaphore_v())
+			//exit(EXIT_FAILURE);
+	int i;
+	if((pid1=fork())==0)
+	{
+		for(i=0;i<5;i++)
+		{
+		semaphore_p();
+		printf("车已到站，已停好\n");
+		semaphore_v();
+		sleep(1);
+		semaphore_p();
+		printf("行驶中\n");
+		semaphore_v();
+		sleep(1);
+		} 
+		exit(0);
+	}else if((pid2=fork())==0)
+		{
+			for(i=0;i<5;i++)
+			{
+			semaphore_p();
+			printf("乘客上下车\n");
+			sleep(1);
+			semaphore_v();
+			sleep(1);
+			} 
+		}else{
+			for(i=0;i<5;i++)
+			{
+			semaphore_p();
+			printf("开门\n");
+			printf("乘客上下车\n");
+			semaphore_v();
+			sleep(1);
+			semaphore_p();
+			printf("关门\n");
+			semaphore_v();
+			sleep(1);
+			} 
+			wait(0);
+	}
+	
+	//if (!semaphore_p()) 
+			//exit(EXIT_FAILURE);
+	//printf("product init is %d\n",semctl(sem_id,0,GETVAL));
+	/*int a=0;
+	a++;
+	if(a>0)
+	{
+		printf("%d\n",a);
+		a--;
+		printf("%d\n",a);
+	}*/
 }
 static int semaphore_p(void)
 {
