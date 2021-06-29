@@ -5,8 +5,10 @@
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <errno.h>
+#include <sys/wait.h>
 int sem_id;
-void semaphore_v();
+static int semaphore_p(void);
+static int semaphore_v(void);
 void init()
 {	
 	key_t key;
@@ -22,28 +24,46 @@ void init()
 
 	sem_id=semget(key,2,IPC_CREAT|0644);
 
-	sem_array[0]=0;				// product
-	sem_array[1]=0;			// space
+	sem_array[0]=1;				// product
+	sem_array[1]=1;			// space
 	arg.array = sem_array;
 	ret = semctl(sem_id, 0, SETALL, arg);	
 	if (ret == -1) 
 		printf("SETALL failed (%d)\n", errno); 
-	printf("%d\n",ret);
+	//printf("%d\n",ret);
 	printf("product init is %d\n",semctl(sem_id,0,GETVAL));
 	printf("space init is %d\n\n",semctl(sem_id,1,GETVAL));
 }
 int main()
 {
 	init();
-	/*while(1){
-if(){
+	pid_t pid1,pid2;
+	int i;
+	if((pid1=fork())==0)
+	{
+		//for(i=0;i<3;i++)
+		semaphore_p();
+		printf("ting!\n");
+		sleep(3);
+		semaphore_v();
+		exit(0);
+		}else{
+			
+			semaphore_p();
+			printf("product init is %d\n",semctl(sem_id,0,GETVAL));	
+			printf("开门\n");
+			//sleep(1);
+			printf("关门\n");
+			semaphore_v();
+			printf("product init is %d\n",semctl(sem_id,0,GETVAL));
+			//printf("space init is %d\n\n",semctl(sem_id,1,GETVAL));
+			semaphore_p();
+			printf("开门\n");
+			printf("关门\n");
+			semaphore_v();
+			wait(0);
+	}
 
-		printf("开门");
-		sleep(1);
-		printf("关门");
-		}*/
-
-	
 }
 void del()
 {
@@ -63,7 +83,7 @@ static int semaphore_p(void)
     return(1);
 }
 
-void semaphore_v()
+static int semaphore_v(void)
 {
     struct sembuf sem_b;
     
@@ -72,7 +92,7 @@ void semaphore_v()
     sem_b.sem_flg = SEM_UNDO;
     if (semop(sem_id, &sem_b, 1) == -1) {
         fprintf(stderr, "semaphore_v failed\n");
-        //return(0);
+        return(0);
     }
-    //return(1);
+    return(1);
 }
