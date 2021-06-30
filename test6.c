@@ -36,40 +36,49 @@ void del();
 int main()
 {
 	init();
+	int i;
 	pid_t pid1,pid2;
 	if((pid1=fork())==-1)
 		printf("fork error");
 	else if(pid1==0)
 		{
-		semaphore_p(2);
-		printf("汽车发车\n");
-		sleep(1);
-		printf("行驶中...\n");
-		sleep(3);
-		printf("车已到站\n");
-		semaphore_v(0);
- 
+		for(i=0;i<3;i++)
+		{
+			semaphore_p(2);
+			printf("汽车发车\n");
+			sleep(1);
+			printf("行驶中...\n");
+			sleep(3);
+			printf("车已到站\n");
+			semaphore_v(0);
+ 		}
+		exit(0);
 		}else {	
 			if((pid2=fork())==-1)
 				printf("fork error");
 			else if(pid2==0){
-					semaphore_p(1);
-					printf("乘客上下车...\n");
-					sleep(2);
-					semaphore_v(0);
+					for(i=0;i<3;i++)
+					{
+						semaphore_p(1);
+						printf("乘客上下车...\n");
+						sleep(2);
+						semaphore_v(0);
+					}
 					exit(0);
 					
 				
 				}else{
-				
-					semaphore_p(0);
-					printf("售票员开门\n");
-					sleep(1);
-					semaphore_v(1);
-					semaphore_p(0);
-					printf("售票员关门\n");
-					sleep(1);
-					semaphore_v(2);
+					for(i=0;i<3;i++)
+					{
+						semaphore_p(0);
+						printf("售票员开门\n");
+						sleep(1);
+						semaphore_v(1);
+						semaphore_p(0);
+						printf("售票员关门\n");
+						sleep(1);
+						semaphore_v(2);
+					}
 					wait(0);
 					wait(0);
 					del();
